@@ -14,7 +14,7 @@
     }
 
     .container {
-      max-width: 1000px;
+      max-width: 1100px;
       margin: auto;
       background: white;
       padding: 25px;
@@ -25,6 +25,14 @@
     h1 {
       text-align: center;
       color: #1f4e79;
+      margin-bottom: 5px;
+    }
+
+    .estado {
+      text-align: center;
+      font-weight: bold;
+      margin-bottom: 15px;
+      color: #28a745;
     }
 
     .stats {
@@ -41,6 +49,23 @@
       border-radius: 10px;
       min-width: 160px;
       text-align: center;
+      font-weight: bold;
+    }
+
+    .progress-box {
+      background: #ddd;
+      border-radius: 20px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+
+    .progress-bar {
+      background: #28a745;
+      color: white;
+      text-align: center;
+      padding: 8px;
+      width: 0%;
+      transition: width 0.3s;
       font-weight: bold;
     }
 
@@ -77,6 +102,7 @@
       padding: 10px;
       border-radius: 8px;
       margin-top: 20px;
+      font-weight: bold;
     }
 
     .postal {
@@ -111,6 +137,10 @@
         align-items: flex-start;
         gap: 8px;
       }
+
+      button {
+        width: 100%;
+      }
     }
   </style>
 </head>
@@ -119,11 +149,17 @@
 
 <div class="container">
   <h1>Postales faltantes de Tomás</h1>
+  <div class="estado" id="estado">Conectando con Firebase...</div>
 
   <div class="stats">
-    <div class="card">Total faltantes iniciales: <span id="total"></span></div>
-    <div class="card">Pendientes: <span id="faltantes"></span></div>
-    <div class="card">Encontradas: <span id="encontradas"></span></div>
+    <div class="card">Total: <span id="total">0</span></div>
+    <div class="card">Pendientes: <span id="faltantes">0</span></div>
+    <div class="card">Encontradas: <span id="encontradas">0</span></div>
+    <div class="card">Progreso: <span id="porcentaje">0,0 %</span></div>
+  </div>
+
+  <div class="progress-box">
+    <div class="progress-bar" id="barra">0,0 %</div>
   </div>
 
   <div class="controls">
@@ -135,137 +171,111 @@
   <div id="lista"></div>
 </div>
 
-<script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCx0FXRwVsbVtr9w1f6kybO6icTF5tdh3w",
+  authDomain: "postales-tomas.firebaseapp.com",
+  projectId: "postales-tomas",
+  storageBucket: "postales-tomas.firebasestorage.app",
+  messagingSenderId: "1053087296318",
+  appId: "1:1053087296318:web:58bcda5722443601059a6f",
+  measurementId: "G-8KLJ1TFGMS"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const refPostales = doc(db, "postales", "tomas");
+
 const datosIniciales = [
-  ["COPAS", "COPA ROJA"],
-  ["COPAS", "COPA VERDE"],
-  ["COPAS", "COPA AZUL"],
+  ["COPAS", "🔴 Copa roja"],
+  ["COPAS", "🟢 Copa verde"],
+  ["COPAS", "🔵 Copa azul"],
 
   ["FWC", "MEX 7"],
   ["FWC", "USA 8"],
 
   ["MEX", "6"], ["MEX", "7"], ["MEX", "16"],
-
   ["KOR", "9"], ["KOR", "14"],
-
-  ["CZE", "2"], ["CZE", "8"], ["CZE", "9"], ["CZE", "14"], ["CZE", "15"],
-  ["CZE", "17"], ["CZE", "18"], ["CZE", "19"], ["CZE", "20"],
-
-  ["BHI", "2"], ["BHI", "3"], ["BHI", "4"], ["BHI", "6"], ["BHI", "7"],
-  ["BHI", "9"], ["BHI", "10"], ["BHI", "14"], ["BHI", "17"],
-
+  ["CZE", "2"], ["CZE", "8"], ["CZE", "9"], ["CZE", "14"], ["CZE", "15"], ["CZE", "17"], ["CZE", "18"], ["CZE", "19"], ["CZE", "20"],
+  ["BHI", "2"], ["BHI", "3"], ["BHI", "4"], ["BHI", "6"], ["BHI", "7"], ["BHI", "9"], ["BHI", "10"], ["BHI", "14"], ["BHI", "17"],
   ["QAT", "4"], ["QAT", "15"],
-
   ["SUI", "6"], ["SUI", "8"], ["SUI", "9"], ["SUI", "12"], ["SUI", "16"],
-
   ["BRA", "4"], ["BRA", "13"],
-
   ["MAR", "4"], ["MAR", "8"], ["MAR", "12"], ["MAR", "13"],
-
   ["HAI", "2"], ["HAI", "13"],
-
   ["SCO", "6"], ["SCO", "7"], ["SCO", "17"], ["SCO", "19"], ["SCO", "20"],
-
-  ["USA", "2"], ["USA", "3"], ["USA", "4"], ["USA", "9"], ["USA", "10"],
-  ["USA", "11"], ["USA", "14"], ["USA", "15"], ["USA", "16"], ["USA", "19"], ["USA", "20"],
-
-  ["PAR", "3"], ["PAR", "5"], ["PAR", "11"], ["PAR", "12"], ["PAR", "13"],
-  ["PAR", "14"], ["PAR", "17"],
-
+  ["USA", "2"], ["USA", "3"], ["USA", "4"], ["USA", "9"], ["USA", "10"], ["USA", "11"], ["USA", "14"], ["USA", "15"], ["USA", "16"], ["USA", "19"], ["USA", "20"],
+  ["PAR", "3"], ["PAR", "5"], ["PAR", "11"], ["PAR", "12"], ["PAR", "13"], ["PAR", "14"], ["PAR", "17"],
   ["AUS", "11"], ["AUS", "14"], ["AUS", "20"],
-
   ["TUR", "6"], ["TUR", "10"], ["TUR", "16"], ["TUR", "17"], ["TUR", "19"], ["TUR", "20"],
-
   ["GER", "14"],
-
   ["CUW", "6"], ["CUW", "7"], ["CUW", "9"], ["CUW", "20"],
-
   ["CIV", "17"],
-
   ["ECU", "5"], ["ECU", "6"], ["ECU", "7"],
-
   ["NED", "11"],
-
   ["JPN", "3"], ["JPN", "14"], ["JPN", "16"],
-
-  ["SWE", "3"], ["SWE", "4"], ["SWE", "9"], ["SWE", "12"], ["SWE", "16"],
-  ["SWE", "17"], ["SWE", "19"],
-
-  ["TUN", "4"], ["TUN", "5"], ["TUN", "7"], ["TUN", "8"], ["TUN", "11"],
-  ["TUN", "14"], ["TUN", "17"], ["TUN", "19"], ["TUN", "20"],
-
+  ["SWE", "3"], ["SWE", "4"], ["SWE", "9"], ["SWE", "12"], ["SWE", "16"], ["SWE", "17"], ["SWE", "19"],
+  ["TUN", "4"], ["TUN", "5"], ["TUN", "7"], ["TUN", "8"], ["TUN", "11"], ["TUN", "14"], ["TUN", "17"], ["TUN", "19"], ["TUN", "20"],
   ["BEL", "5"], ["BEL", "7"], ["BEL", "8"], ["BEL", "9"], ["BEL", "11"],
-
-  ["IRN", "2"], ["IRN", "4"], ["IRN", "6"], ["IRN", "8"], ["IRN", "14"],
-  ["IRN", "15"], ["IRN", "20"],
-
+  ["IRN", "2"], ["IRN", "4"], ["IRN", "6"], ["IRN", "8"], ["IRN", "14"], ["IRN", "15"], ["IRN", "20"],
   ["NZL", "8"], ["NZL", "14"],
-
   ["ESP", "4"], ["ESP", "5"], ["ESP", "6"], ["ESP", "13"],
-
   ["CPV", "8"], ["CPV", "10"], ["CPV", "11"], ["CPV", "13"], ["CPV", "16"],
-
-  ["KSA", "3"], ["KSA", "5"], ["KSA", "7"], ["KSA", "11"], ["KSA", "12"],
-  ["KSA", "13"], ["KSA", "16"],
-
+  ["KSA", "3"], ["KSA", "5"], ["KSA", "7"], ["KSA", "11"], ["KSA", "12"], ["KSA", "13"], ["KSA", "16"],
   ["URU", "9"], ["URU", "14"], ["URU", "17"], ["URU", "19"],
-
   ["FRA", "6"], ["FRA", "9"],
-
   ["SEN", "1"], ["SEN", "5"],
-
-  ["IRQ", "2"], ["IRQ", "4"], ["IRQ", "5"], ["IRQ", "6"], ["IRQ", "7"],
-  ["IRQ", "9"], ["IRQ", "10"], ["IRQ", "13"], ["IRQ", "15"], ["IRQ", "19"], ["IRQ", "20"],
-
+  ["IRQ", "2"], ["IRQ", "4"], ["IRQ", "5"], ["IRQ", "6"], ["IRQ", "7"], ["IRQ", "9"], ["IRQ", "10"], ["IRQ", "13"], ["IRQ", "15"], ["IRQ", "19"], ["IRQ", "20"],
   ["NOR", "8"], ["NOR", "9"], ["NOR", "17"], ["NOR", "20"],
-
   ["ARG", "3"],
-
   ["ALG", "5"], ["ALG", "7"], ["ALG", "20"],
-
   ["AUT", "5"], ["AUT", "10"], ["AUT", "20"],
-
-  ["JOR", "2"], ["JOR", "3"], ["JOR", "6"], ["JOR", "7"], ["JOR", "13"],
-  ["JOR", "14"], ["JOR", "16"], ["JOR", "18"], ["JOR", "19"],
-
+  ["JOR", "2"], ["JOR", "3"], ["JOR", "6"], ["JOR", "7"], ["JOR", "13"], ["JOR", "14"], ["JOR", "16"], ["JOR", "18"], ["JOR", "19"],
   ["POR", "2"], ["POR", "6"], ["POR", "7"], ["POR", "10"], ["POR", "15"], ["POR", "20"],
-
-  ["COD", "1"], ["COD", "6"], ["COD", "7"], ["COD", "8"], ["COD", "10"],
-  ["COD", "11"], ["COD", "12"], ["COD", "14"], ["COD", "16"], ["COD", "17"],
-  ["COD", "19"], ["COD", "20"],
-
-  ["UZB", "1"], ["UZB", "2"], ["UZB", "5"], ["UZB", "6"], ["UZB", "8"],
-  ["UZB", "10"], ["UZB", "14"], ["UZB", "15"], ["UZB", "17"],
-
+  ["COD", "1"], ["COD", "6"], ["COD", "7"], ["COD", "8"], ["COD", "10"], ["COD", "11"], ["COD", "12"], ["COD", "14"], ["COD", "16"], ["COD", "17"], ["COD", "19"], ["COD", "20"],
+  ["UZB", "1"], ["UZB", "2"], ["UZB", "5"], ["UZB", "6"], ["UZB", "8"], ["UZB", "10"], ["UZB", "14"], ["UZB", "15"], ["UZB", "17"],
   ["COL", "2"], ["COL", "4"], ["COL", "8"], ["COL", "13"],
-
   ["ING", "2"], ["ING", "10"], ["ING", "16"],
-
   ["CRO", "13"], ["CRO", "14"], ["CRO", "16"],
-
   ["GHA", "1"], ["GHA", "2"], ["GHA", "11"], ["GHA", "13"], ["GHA", "15"],
-
-  ["PAN", "1"], ["PAN", "3"], ["PAN", "6"], ["PAN", "8"], ["PAN", "9"],
-  ["PAN", "10"], ["PAN", "11"], ["PAN", "13"], ["PAN", "14"], ["PAN", "15"], ["PAN", "18"]
+  ["PAN", "1"], ["PAN", "3"], ["PAN", "6"], ["PAN", "8"], ["PAN", "9"], ["PAN", "10"], ["PAN", "11"], ["PAN", "13"], ["PAN", "14"], ["PAN", "15"], ["PAN", "18"]
 ];
 
-let postales = JSON.parse(localStorage.getItem("postalesTomas"));
+let postales = [];
 
-if (!postales) {
-  postales = datosIniciales.map((item, index) => ({
+function crearListaInicial() {
+  return datosIniciales.map((item, index) => ({
     id: index,
     equipo: item[0],
     numero: item[1],
     encontrada: false
   }));
-  guardar();
 }
 
-function guardar() {
-  localStorage.setItem("postalesTomas", JSON.stringify(postales));
+async function guardarEnFirebase() {
+  await setDoc(refPostales, {
+    postales: postales,
+    actualizado: new Date().toISOString()
+  });
 }
 
-function mostrarPostales() {
+onSnapshot(refPostales, async (docSnap) => {
+  if (docSnap.exists() && docSnap.data().postales) {
+    postales = docSnap.data().postales;
+    document.getElementById("estado").textContent = "✅ Sincronizado con Firebase";
+    mostrarPostales();
+  } else {
+    postales = crearListaInicial();
+    await guardarEnFirebase();
+    document.getElementById("estado").textContent = "✅ Lista inicial creada en Firebase";
+    mostrarPostales();
+  }
+});
+
+window.mostrarPostales = function() {
   const lista = document.getElementById("lista");
   const filtro = document.getElementById("buscador").value.toLowerCase();
 
@@ -273,10 +283,16 @@ function mostrarPostales() {
 
   const encontradas = postales.filter(p => p.encontrada).length;
   const faltantes = postales.length - encontradas;
+  const porcentaje = postales.length > 0 ? (encontradas / postales.length) * 100 : 0;
 
   document.getElementById("total").textContent = postales.length;
   document.getElementById("faltantes").textContent = faltantes;
   document.getElementById("encontradas").textContent = encontradas;
+  document.getElementById("porcentaje").textContent = porcentaje.toFixed(1).replace(".", ",") + " %";
+
+  const barra = document.getElementById("barra");
+  barra.style.width = porcentaje + "%";
+  barra.textContent = porcentaje.toFixed(1).replace(".", ",") + " %";
 
   const filtradas = postales.filter(p =>
     p.equipo.toLowerCase().includes(filtro) ||
@@ -286,16 +302,18 @@ function mostrarPostales() {
   const grupos = {};
 
   filtradas.forEach(p => {
-    if (!grupos[p.equipo]) {
-      grupos[p.equipo] = [];
-    }
+    if (!grupos[p.equipo]) grupos[p.equipo] = [];
     grupos[p.equipo].push(p);
   });
 
   for (const equipo in grupos) {
     const titulo = document.createElement("div");
     titulo.className = "team-title";
-    titulo.textContent = equipo;
+
+    const totalEquipo = grupos[equipo].length;
+    const encontradasEquipo = grupos[equipo].filter(p => p.encontrada).length;
+
+    titulo.textContent = `${equipo} — ${encontradasEquipo}/${totalEquipo}`;
     lista.appendChild(titulo);
 
     grupos[equipo].forEach(postal => {
@@ -314,27 +332,28 @@ function mostrarPostales() {
   }
 }
 
-function cambiarEstado(id) {
+window.cambiarEstado = async function(id) {
   const postal = postales.find(p => p.id === id);
   postal.encontrada = !postal.encontrada;
-  guardar();
-  mostrarPostales();
+  document.getElementById("estado").textContent = "Guardando...";
+  await guardarEnFirebase();
 }
 
-function marcarTodoFaltante() {
-  postales.forEach(p => p.encontrada = false);
-  guardar();
-  mostrarPostales();
-}
-
-function reiniciarLista() {
-  if (confirm("¿Deseás reiniciar toda la lista? Se perderán las postales marcadas como encontradas.")) {
-    localStorage.removeItem("postalesTomas");
-    location.reload();
+window.marcarTodoFaltante = async function() {
+  if (confirm("¿Deseás marcar todas como faltantes?")) {
+    postales.forEach(p => p.encontrada = false);
+    document.getElementById("estado").textContent = "Guardando...";
+    await guardarEnFirebase();
   }
 }
 
-mostrarPostales();
+window.reiniciarLista = async function() {
+  if (confirm("¿Deseás reiniciar toda la lista? Se perderán las postales marcadas como encontradas.")) {
+    postales = crearListaInicial();
+    document.getElementById("estado").textContent = "Reiniciando...";
+    await guardarEnFirebase();
+  }
+}
 </script>
 
 </body>
