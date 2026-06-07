@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Prueba Firebase</title>
+</head>
+<body>
+
+<h1>Prueba Firebase</h1>
+
+<button onclick="guardar()">Guardar dato</button>
+
+<p id="estado">Esperando...</p>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCx0FXRwVsbVtr9w1f6kybO6icTF5tdh3w",
+  authDomain: "postales-tomas.firebaseapp.com",
+  projectId: "postales-tomas",
+  storageBucket: "postales-tomas.firebasestorage.app",
+  messagingSenderId: "1053087296318",
+  appId: "1:1053087296318:web:58bcda5722443601059a6f",
+  measurementId: "G-8KLJ1TFGMS"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+window.guardar = async function() {
+
+    try {
+
+        await setDoc(
+            doc(db, "postales", "tomas"),
+            {
+                prueba: "Firebase conectado",
+                fecha: new Date().toISOString()
+            }
+        );
+
+        document.getElementById("estado").innerHTML =
+            "✅ Dato guardado correctamente";
+
+    } catch(error) {
+
+        document.getElementById("estado").innerHTML =
+            "❌ Error: " + error.message;
+
+        console.error(error);
+    }
+}
+
+</script>
+
+</body>
+</html>
