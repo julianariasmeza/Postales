@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Postales faltantes de Tomás</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: auto;
+      background: white;
+      padding: 25px;
+      border-radius: 15px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    }
+
+    h1 {
+      text-align: center;
+      color: #1f4e79;
+    }
+
+    .stats {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    .card {
+      background: #e9f2fb;
+      padding: 15px;
+      border-radius: 10px;
+      min-width: 160px;
+      text-align: center;
+      font-weight: bold;
+    }
+
+    .controls {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    input, button {
+      padding: 10px;
+      margin: 5px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      background: #1f4e79;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #163956;
+    }
+
+    .reset {
+      background: #d9534f;
+    }
+
+    .team-title {
+      background: #1f4e79;
+      color: white;
+      padding: 10px;
+      border-radius: 8px;
+      margin-top: 20px;
+    }
+
+    .postal {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #f8f9fa;
+      padding: 10px;
+      margin: 6px 0;
+      border-radius: 8px;
+      border-left: 5px solid #d9534f;
+    }
+
+    .postal.encontrada {
+      border-left-color: #28a745;
+      background: #eaf7ee;
+      color: #555;
+      text-decoration: line-through;
+    }
+
+    .found {
+      background: #28a745;
+    }
+
+    .faltante {
+      background: #f0ad4e;
+    }
+
+    @media (max-width: 600px) {
+      .postal {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+  <h1>Postales faltantes de Tomás</h1>
+
+  <div class="stats">
+    <div class="card">Total faltantes iniciales: <span id="total"></span></div>
+    <div class="card">Pendientes: <span id="faltantes"></span></div>
+    <div class="card">Encontradas: <span id="encontradas"></span></div>
+  </div>
+
+  <div class="controls">
+    <input type="text" id="buscador" placeholder="Buscar equipo o número..." onkeyup="mostrarPostales()">
+    <button onclick="marcarTodoFaltante()">Marcar todo como faltante</button>
+    <button class="reset" onclick="reiniciarLista()">Reiniciar lista</button>
+  </div>
+
+  <div id="lista"></div>
+</div>
+
+<script>
+const datosIniciales = [
+  ["COPAS", "COPA ROJA"],
+  ["COPAS", "COPA VERDE"],
+  ["COPAS", "COPA AZUL"],
+
+  ["FWC", "MEX 7"],
+  ["FWC", "USA 8"],
+
+  ["MEX", "6"], ["MEX", "7"], ["MEX", "16"],
+
+  ["KOR", "9"], ["KOR", "14"],
+
+  ["CZE", "2"], ["CZE", "8"], ["CZE", "9"], ["CZE", "14"], ["CZE", "15"],
+  ["CZE", "17"], ["CZE", "18"], ["CZE", "19"], ["CZE", "20"],
+
+  ["BHI", "2"], ["BHI", "3"], ["BHI", "4"], ["BHI", "6"], ["BHI", "7"],
+  ["BHI", "9"], ["BHI", "10"], ["BHI", "14"], ["BHI", "17"],
+
+  ["QAT", "4"], ["QAT", "15"],
+
+  ["SUI", "6"], ["SUI", "8"], ["SUI", "9"], ["SUI", "12"], ["SUI", "16"],
+
+  ["BRA", "4"], ["BRA", "13"],
+
+  ["MAR", "4"], ["MAR", "8"], ["MAR", "12"], ["MAR", "13"],
+
+  ["HAI", "2"], ["HAI", "13"],
+
+  ["SCO", "6"], ["SCO", "7"], ["SCO", "17"], ["SCO", "19"], ["SCO", "20"],
+
+  ["USA", "2"], ["USA", "3"], ["USA", "4"], ["USA", "9"], ["USA", "10"],
+  ["USA", "11"], ["USA", "14"], ["USA", "15"], ["USA", "16"], ["USA", "19"], ["USA", "20"],
+
+  ["PAR", "3"], ["PAR", "5"], ["PAR", "11"], ["PAR", "12"], ["PAR", "13"],
+  ["PAR", "14"], ["PAR", "17"],
+
+  ["AUS", "11"], ["AUS", "14"], ["AUS", "20"],
+
+  ["TUR", "6"], ["TUR", "10"], ["TUR", "16"], ["TUR", "17"], ["TUR", "19"], ["TUR", "20"],
+
+  ["GER", "14"],
+
+  ["CUW", "6"], ["CUW", "7"], ["CUW", "9"], ["CUW", "20"],
+
+  ["CIV", "17"],
+
+  ["ECU", "5"], ["ECU", "6"], ["ECU", "7"],
+
+  ["NED", "11"],
+
+  ["JPN", "3"], ["JPN", "14"], ["JPN", "16"],
+
+  ["SWE", "3"], ["SWE", "4"], ["SWE", "9"], ["SWE", "12"], ["SWE", "16"],
+  ["SWE", "17"], ["SWE", "19"],
+
+  ["TUN", "4"], ["TUN", "5"], ["TUN", "7"], ["TUN", "8"], ["TUN", "11"],
+  ["TUN", "14"], ["TUN", "17"], ["TUN", "19"], ["TUN", "20"],
+
+  ["BEL", "5"], ["BEL", "7"], ["BEL", "8"], ["BEL", "9"], ["BEL", "11"],
+
+  ["IRN", "2"], ["IRN", "4"], ["IRN", "6"], ["IRN", "8"], ["IRN", "14"],
+  ["IRN", "15"], ["IRN", "20"],
+
+  ["NZL", "8"], ["NZL", "14"],
+
+  ["ESP", "4"], ["ESP", "5"], ["ESP", "6"], ["ESP", "13"],
+
+  ["CPV", "8"], ["CPV", "10"], ["CPV", "11"], ["CPV", "13"], ["CPV", "16"],
+
+  ["KSA", "3"], ["KSA", "5"], ["KSA", "7"], ["KSA", "11"], ["KSA", "12"],
+  ["KSA", "13"], ["KSA", "16"],
+
+  ["URU", "9"], ["URU", "14"], ["URU", "17"], ["URU", "19"],
+
+  ["FRA", "6"], ["FRA", "9"],
+
+  ["SEN", "1"], ["SEN", "5"],
+
+  ["IRQ", "2"], ["IRQ", "4"], ["IRQ", "5"], ["IRQ", "6"], ["IRQ", "7"],
+  ["IRQ", "9"], ["IRQ", "10"], ["IRQ", "13"], ["IRQ", "15"], ["IRQ", "19"], ["IRQ", "20"],
+
+  ["NOR", "8"], ["NOR", "9"], ["NOR", "17"], ["NOR", "20"],
+
+  ["ARG", "3"],
+
+  ["ALG", "5"], ["ALG", "7"], ["ALG", "20"],
+
+  ["AUT", "5"], ["AUT", "10"], ["AUT", "20"],
+
+  ["JOR", "2"], ["JOR", "3"], ["JOR", "6"], ["JOR", "7"], ["JOR", "13"],
+  ["JOR", "14"], ["JOR", "16"], ["JOR", "18"], ["JOR", "19"],
+
+  ["POR", "2"], ["POR", "6"], ["POR", "7"], ["POR", "10"], ["POR", "15"], ["POR", "20"],
+
+  ["COD", "1"], ["COD", "6"], ["COD", "7"], ["COD", "8"], ["COD", "10"],
+  ["COD", "11"], ["COD", "12"], ["COD", "14"], ["COD", "16"], ["COD", "17"],
+  ["COD", "19"], ["COD", "20"],
+
+  ["UZB", "1"], ["UZB", "2"], ["UZB", "5"], ["UZB", "6"], ["UZB", "8"],
+  ["UZB", "10"], ["UZB", "14"], ["UZB", "15"], ["UZB", "17"],
+
+  ["COL", "2"], ["COL", "4"], ["COL", "8"], ["COL", "13"],
+
+  ["ING", "2"], ["ING", "10"], ["ING", "16"],
+
+  ["CRO", "13"], ["CRO", "14"], ["CRO", "16"],
+
+  ["GHA", "1"], ["GHA", "2"], ["GHA", "11"], ["GHA", "13"], ["GHA", "15"],
+
+  ["PAN", "1"], ["PAN", "3"], ["PAN", "6"], ["PAN", "8"], ["PAN", "9"],
+  ["PAN", "10"], ["PAN", "11"], ["PAN", "13"], ["PAN", "14"], ["PAN", "15"], ["PAN", "18"]
+];
+
+let postales = JSON.parse(localStorage.getItem("postalesTomas"));
+
+if (!postales) {
+  postales = datosIniciales.map((item, index) => ({
+    id: index,
+    equipo: item[0],
+    numero: item[1],
+    encontrada: false
+  }));
+  guardar();
+}
+
+function guardar() {
+  localStorage.setItem("postalesTomas", JSON.stringify(postales));
+}
+
+function mostrarPostales() {
+  const lista = document.getElementById("lista");
+  const filtro = document.getElementById("buscador").value.toLowerCase();
+
+  lista.innerHTML = "";
+
+  const encontradas = postales.filter(p => p.encontrada).length;
+  const faltantes = postales.length - encontradas;
+
+  document.getElementById("total").textContent = postales.length;
+  document.getElementById("faltantes").textContent = faltantes;
+  document.getElementById("encontradas").textContent = encontradas;
+
+  const filtradas = postales.filter(p =>
+    p.equipo.toLowerCase().includes(filtro) ||
+    p.numero.toLowerCase().includes(filtro)
+  );
+
+  const grupos = {};
+
+  filtradas.forEach(p => {
+    if (!grupos[p.equipo]) {
+      grupos[p.equipo] = [];
+    }
+    grupos[p.equipo].push(p);
+  });
+
+  for (const equipo in grupos) {
+    const titulo = document.createElement("div");
+    titulo.className = "team-title";
+    titulo.textContent = equipo;
+    lista.appendChild(titulo);
+
+    grupos[equipo].forEach(postal => {
+      const div = document.createElement("div");
+      div.className = "postal" + (postal.encontrada ? " encontrada" : "");
+
+      div.innerHTML = `
+        <strong>${postal.equipo} ${postal.numero}</strong>
+        <button class="${postal.encontrada ? 'faltante' : 'found'}" onclick="cambiarEstado(${postal.id})">
+          ${postal.encontrada ? "Marcar faltante" : "Marcar encontrada"}
+        </button>
+      `;
+
+      lista.appendChild(div);
+    });
+  }
+}
+
+function cambiarEstado(id) {
+  const postal = postales.find(p => p.id === id);
+  postal.encontrada = !postal.encontrada;
+  guardar();
+  mostrarPostales();
+}
+
+function marcarTodoFaltante() {
+  postales.forEach(p => p.encontrada = false);
+  guardar();
+  mostrarPostales();
+}
+
+function reiniciarLista() {
+  if (confirm("¿Deseás reiniciar toda la lista? Se perderán las postales marcadas como encontradas.")) {
+    localStorage.removeItem("postalesTomas");
+    location.reload();
+  }
+}
+
+mostrarPostales();
+</script>
+
+</body>
+</html>
