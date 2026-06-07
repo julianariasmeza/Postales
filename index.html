@@ -265,7 +265,7 @@ async function guardarEnFirebase() {
 onSnapshot(refPostales, async (docSnap) => {
   if (docSnap.exists() && docSnap.data().postales) {
     postales = docSnap.data().postales;
-    document.getElementById("estado").textContent = "✅ Sincronizado con Firebase";
+    document.getElementById("estado").textContent = "✅ Sincronizado ";
     mostrarPostales();
   } else {
     postales = crearListaInicial();
